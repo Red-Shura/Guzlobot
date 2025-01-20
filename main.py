@@ -16,15 +16,20 @@ orders = []
 
 
 class MyStates(StatesGroup):
-    Start = State()
+    
     MyOrders = State()
     AddOrder = State()
     OrderBoard = State()
     MyAds = State()
+    Menu = State()
 
 
 async def handle_mainkeyboard(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    
+    item = types.KeyboardButton("Главная")
+    markup.add(item)
+
     item = types.KeyboardButton("Мои заказы")
     markup.add(item)
 
@@ -41,12 +46,21 @@ async def handle_mainkeyboard(message):
 
 
 '''Обработка команды start'''
-@bot.message_handler(state=MyStates.Start)
+@bot.message_handler(commands=['start'])
 
 async def hello_message(message):
 
     await bot.reply_to(message, 'Приветствую, я ТГ-бот сервис: Guzlobot.\n Способен принимать заказы от вас и выставлять их на доску объявлений.')
-    await bot.send_message(message.chat.id, 'Вы хотите Добавить заказ\nВзять заказ\nПосмотреть ваши объявления')
+    await bot.set_state(message.from_user.id, MyStates.Menu, message.chat.id)
+
+'''Функция главного меню'''
+@bot.message_handler(state=MyStates.Menu, commands=['Главная'])
+
+async def main_menu(msg):
+
+    await bot.send_message(msg.chat.id, 'Вы хотите: Добавить заказ\nВзять заказ\nПосмотреть ваши объявления')
+    await bot.set_state(msg.from_user.id, MyStates.Menu, msg.chat.id)
+    await handle_mainkeyboard()
 
 
 '''Обработка команды добавление заказа'''
@@ -59,7 +73,7 @@ async def add_order(message):
     orders.append(message)
     await bot.send_message(message.chat.id, "Ваш заказ принят!")
 
-    handle_mainkeyboard()
+    await handle_mainkeyboard()
 
 
 '''Обработка команды доска объявлений'''
@@ -73,7 +87,7 @@ async def show_orders(message):
     else:
         await bot.send_message(message.chat.id, "Нет текущих заказов.")
 
-    handle_mainkeyboard()
+    await handle_mainkeyboard()
 
 
 '''Обработка команды Мои объявления'''
@@ -83,7 +97,7 @@ async def my_ads(message):
 
     await bot.send_message(message.chat.id, '\n'.join([order for order in orders if message.from_user.id == order['author']]))
 
-    handle_mainkeyboard()
+    await handle_mainkeyboard()
 
 
 '''Обработка команды Мои заказы'''
@@ -93,7 +107,7 @@ async def my_orders(message):
 
     await bot.send_message(message.chat.id, '\n'.join([order for order in orders if message.from_user.id in order['reactions']]))
 
-    handle_mainkeyboard()
+    await handle_mainkeyboard()
 
 
 bot.add_custom_filter()
